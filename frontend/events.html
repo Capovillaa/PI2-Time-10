@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-br" data-bs-theme="dark">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Sign Up PUC BET</title>
+        <link 
+         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+         rel="stylesheet"
+         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+         crossorigin="anonymous">
+        <link rel="stylesheet"
+         href="https://use.fontawesome.com/releases/v5.12.1/css/all.css" 
+         crossorigin="anonymous">
+    </head>
+    <body>
+        <nav class="navbar bg-body-tertiary">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">
+                    <img
+                     src="http://getbootstrap.com/docs/5.3/assets/brand/bootstrap-logo.svg"
+                     alt="Logo" width="30" height="24" class="d-inline-block align-text-top">
+                     PUC BETS
+                </a>
+                <span class="navbar-text">
+                    Saldo: 0,00
+                </span>
+            </div>
+        </nav>
+
+        <div id="loadingSpinner" class="container" style="display: none;">
+            <div id="loading" class="d-flex justify-content-center" style="padding-top: 20px;">
+                <div class="spinner-border" role="status">
+                    <span class="sr-only">Carregando...</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="mainContent" class="container-fluid" style="padding-top: 20px;">
+            <div class="row">
+                <div class="col">
+                    <h3>Eventos</h3>
+                </div>
+                <div class="col-md-auto">
+                    <div class="input-group">
+                        <input type="text" class="form-control"
+                         placeholder="Buscar evento...">
+                        <button type="button" class="btn btn-secondary">
+                          <i class="fas fa-search"></i> Buscar</button>
+                    </div>
+                </div>
+                <div class="col col-lg-1">
+                    <button type="button" class="btn btn-outline-primary"
+                     style="float:right;" data-bs-toggle="modal"
+                     data-bs-target="#addNewEventModal">
+                     <i class="fas fa-plus"></i> Novo</button>
+                </div>
+            </div>
+            <div class="row align-items-center">
+                <div class="col">
+                    <table id="tableEvents" class="table">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="text-left">Título</th>
+                                <th scope="col" class="text-left">Descrição</th>
+                                <th scope="col" class="text-left">Data do evento</th>
+                                <th scope="col" class="text-end">Valor da cota</th>
+                                <th scope="col" class="text-left">Categoria</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!--
+                            <tr id="${event.ID}">
+                                <td class="text-left">Botafogo X Atlético Mineiro</td>
+                                <td class="text-left">O Botafogo irá vencer a final contra o Atlético Mineiro e será campeão da Libertadores da América?</td>
+                                <td class="text-left">30/11/2024</td>
+                                <td class="text-end">5,00</td>
+                                <td class="text-left">Futebol</td>
+                                <td type="button" class="btn btn-outline-secondary"
+                                 style="float:right;" data-bs-toggle="modal"
+                                 data-bs-target="#addNewEventModal">
+                                 <i class="fas fa-plus"></i> Apostar</button>
+                            </tr>
+                            -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="row">
+                <nav aria-label="Page navigation" style="float:right;">
+                    <ul id="ulPaginator" class="pagination pagination-sm">
+                        <!--
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" aria-label="Anterior">
+                                <span aria-hidden="true">&laquo;</span></a></li>
+                        <li class="page-item"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item">
+                            <a class="page-link" href="#" aria-label="Próximo">
+                                <span aria-hidden="true">&raquo;</span></a></li>
+                        -->
+                    </ul>
+                </nav>
+            </div>
+        </div>
+        <div class="modal fade" id="addNewEventModal" tabindex="-1"
+            aria-labelledby="Modal de criação de novos eventos" aria-hidden="true">
+            <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="exampleModalLabel">Novo evento</h1>
+                    <button type="button" class="btn-close"
+                     data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Preencha todos os campos para cadastrar um evento</p>
+                    <form>
+                        <div class="mb-3">
+                            <label for="eventTitle" class="form-label">Titulo</label>
+                            <input type="text" class="form-control" id="eventTitle">
+                        </div>
+                        <div class="mb-3">
+                            <label for="eventDescription" class="form-label">Descrição</label>
+                            <input type="text" class="form-control" id="eventDescription">
+                        </div>
+                        <div class="mb-3">
+                            <label for="eventDate" class="form-label">Data do evento</label>
+                            <input type="text" class="form-control w-8"
+                             id="eventDate" aria-describedby="eventDateHelp">
+                            <div id="eventDateHelp" class="form-text">
+                                Exemplo: 21/10/2025
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="eventPrice" class="form-label">Valor da cota</label>
+                            <input type="text" class="form-control w-25"
+                             id="eventPrice" aria-describedby="eventPriceHelp">
+                            <div id="eventPriceHelp" class="form-text">
+                                Exemplo: 19.90
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <select class="form-select" id="eventCategoria" aria-label="Seleção de categoria">
+                                <option selected>Selecione sua categoria</option>
+                                <option value="Futebol">Futebol</option>
+                                <option value="E-Sports">E-Sports</option>
+                                <option value="Basquete">Basquete</option>
+                                <option value="Política">Política</option>
+                            </select>                            
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary"
+                     data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="saveNewEvent();">Salvar</button>
+                </div>
+            </div>
+            </div>
+        </div>
+        <script 
+         src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" 
+         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" 
+         crossorigin="anonymous"></script>
+        <script>
+            var ulPaginator = document.getElementById("ulPaginator");
+            var tableEvents = document.getElementById("tableEvents");
+
+            let numPages = 0;
+            const pageSize = 10;
+            var page = 1;
+
+            async function requestNumberOfEvents() {
+                try{
+                    const resQtty = await fetch("http://127.0.0.1:3000/getEventsQtty", {
+                        method: "GET"
+                    });
+
+                    if(resQtty.ok){
+                        const qttyJson = await resQtty.json();
+                        const qtty = qttyJson[0].EVENTSQTTY;
+                        console.log(qtty);
+                        numPages = Math.ceil(qtty/pageSize);
+                        refreshPaginator();
+                    }
+                    else{
+                        alert('Ocorreu um erro ao receber os dados do banco.')
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+
+            function resetUlPageNumbers(){
+                while(ulPaginator.firstChild)
+                  ulPaginator.removeChild(ulPaginator.firstChild);
+            }
+
+            function refreshPaginator(){
+                resetUlPageNumbers();
+                let status = "";
+                let strLi = "";
+
+                for (let i = 1; i <= numPages; i++){
+                    (i === page) ? status = "page-item active" : status = "page-item";
+                    strLi = `<li class="${status}"><a class="page-link" href="javascript:requestEvents(${i});">${i}</a></li>`;
+                    ulPaginator.innerHTML += strLi;
+                }
+            }
+
+            async function requestEvents(pageNumber){
+                try{
+                    page = pageNumber;
+                    const reqHeaders = new Headers();
+                    reqHeaders.append("Content-Type", "application/json");
+                    reqHeaders.append("page", pageNumber);
+                    reqHeaders.append("pageSize", pageSize);
+
+                    const resEvents = await fetch("http://127.0.0.1:3000/getEventsByPage", {
+                        method: "POST",
+                        headers: reqHeaders
+                    });
+
+                    if(resEvents.ok){
+                        refreshPaginator();
+                        const eventsData = await resEvents.json();
+                        console.log(eventsData);
+                        fillTableWithEvents(eventsData);
+                    } else {
+                        alert('Ocorreu um erro ao encontrar os eventos aprovados ou a quantidade de páginas.')
+                    }
+                } catch (error) {
+                    console.error(error);
+                }
+            }
+
+            function fillTableWithEvents(events) {
+                cleanTableRows();
+                if (events.length === 0) {
+                    const emptyRow = `
+                        <tr>
+                            <td colspan="5" class="text-center">Nenhum evento encontrado.</td>
+                        </tr>`;
+                    tableEvents.getElementsByTagName('tbody')[0].insertAdjacentHTML('beforeend', emptyRow);
+                    return;
+                }
+                events.forEach(addEventRow);
+            }
+
+            function cleanTableRows(){
+                tableEvents.getElementsByTagName('tbody')[0].innerHTML = '';
+            }
+
+            function addEventRow(event) {
+                let price = parseFloat(event.VALOR_COTA);
+                const newEventRow = `
+                    <tr id="${event.ID_EVT}">
+                        <td class="text-left">${event.TITULO}</td>
+                        <td class="text-left">${event.DESCRICAO}</td>
+                        <td class="text-left">${event.DATA_EVT}</td> <!-- Usando o campo DATA_EVT -->
+                        <td class="text-end">${price.toFixed(2)}</td>
+                        <td class="text-left">${event.CATEGORIA}</td>
+                        <td type="button" class="btn btn-outline-secondary"
+                            style="float:right;" data-bs-toggle="modal"
+                            data-bs-target="#addNewEventModal">
+                            <i class="fas fa-plus"></i> Apostar
+                        </button>
+                    </tr>`;
+                tableEvents.getElementsByTagName('tbody')[0].insertAdjacentHTML('beforeend', newEventRow);
+            }
+
+            function isNumber(value){
+                return typeof value === 'number';
+            }
+
+            function closeModalAddEvents(){
+                var modalNewEvent = document.getElementById('addNewEventModal');
+                var modal = bootstrap.Modal.getInstance(modalNewEvent)
+                modal.hide();
+            }
+
+            async function saveNewEvent() {
+                var pTitle = document.getElementById("eventTitle").value;
+                var pDescription = document.getElementById("eventDescription").value;
+                var pDate = document.getElementById("eventDate").value;
+                var pPrice = parseFloat(document.getElementById("eventPrice").value);
+                var pCategoria = document.getElementById("eventCategoria").value;
+                console.log(pTitle);
+                console.log(pDescription);
+                console.log(pDate);
+                console.log(pPrice);
+                console.log(pCategoria);
+                if (pTitle && pDescription && pDate && !isNaN(pPrice) && pCategoria !== "Selecione sua categoria") {
+                    await requestAddNewEvent(pTitle, pDescription, pDate, pPrice, pCategoria);
+                } else {
+                    alert('Preencha todos os campos corretamente.');
+                }
+            }
+
+            async function requestAddNewEvent(title, description, date, price, categoria) {
+                try{
+                    const h = new Headers();
+                    h.append("Content-Type", "application/json");
+
+                    h.append("email", "eduardo.fg1@puccampinas.edu.br");
+                    h.append("titulo", title);
+                    h.append("descricao", description);
+                    h.append("categoria", categoria);
+                    h.append("valor-cota", price);
+                    h.append("data-hora-inicio", "20/11/2024");
+                    h.append("data-hora-fim", "22/11/2024");
+                    h.append("data-evento", date);
+
+                    const resAddNewEvent = await fetch("http://127.0.0.1:3000/addNewEvent", {
+                        method: "PUT",
+                        headers: h,
+                    })
+
+                    if(resAddNewEvent.ok){
+                        console.log("Evento adicionado com sucesso!");
+                        closeModalAddEvents();
+                        requestEvents(numPages);
+                    } else {
+                        const errorText = await resAddNewEvent.text();
+                        console.error("Erro ao adicionar evento:", errorText);
+                    }
+                } catch (error) {
+                    console.log("Erro na requisição:", error);
+                }
+            }
+
+            document.addEventListener('readystatechange', event => {
+                if(event.target.readyState === "complete") {
+                    requestNumberOfEvents();
+                    requestEvents(page);
+                }
+            });
+
+        </script>
+    </body>
+</html>
