@@ -15,7 +15,8 @@ DROP SEQUENCE SEQ_EVENTSFK;
 CREATE TABLE ADMIN_ACCOUNTS (
     id_adm NUMBER PRIMARY KEY,
     email VARCHAR2(255),
-    senha VARCHAR2(255)
+    senha VARCHAR2(255),
+    token VARCHAR2(255)
 );
 
 CREATE TABLE ACCOUNTS (
@@ -43,7 +44,7 @@ CREATE TABLE CREDIT_CARD (
 CREATE TABLE EVENTS (
     id_evt NUMBER PRIMARY KEY,
     fk_id_usr NUMBER,
-    titulo VARCHAR2(255) UNIQUE,
+    titulo VARCHAR2(255),
     descricao VARCHAR2(1000),
     categoria VARCHAR2(255),
     data_inicio VARCHAR2(10),
