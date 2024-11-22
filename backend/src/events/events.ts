@@ -1,6 +1,9 @@
 import { Request, RequestHandler, Response } from "express";
 import OracleDB, { events } from "oracledb";
 import dotenv from 'dotenv';
+import { UserAccount } from "../Interfaces/interface";
+import { Wallet } from "../Interfaces/interface";
+import { Events } from "../Interfaces/interface";
 dotenv.config();
 
 OracleDB.autoCommit = true;
@@ -24,6 +27,7 @@ function validateEmail(email: string) :boolean{
 }
 
 export namespace EventsManager{
+
     async function addNewEvent(email: string, titulo: string, descricao: string, categoria: string, 
     valorCota: number, dataHoraInicio: string, dataHoraFim: string, dataEvento: string) : Promise<OracleDB.Result<unknown>> {
         OracleDB.outFormat = OracleDB.OUT_FORMAT_OBJECT;
@@ -309,7 +313,54 @@ export namespace EventsManager{
         return eventsQtty;
     }
 
-    async function betOnEvent(email:string,tituloEvento:string,qtdCotas:number,escolha:string) {
+    async function getUser(email: string,connection: OracleDB.Connection){
+
+        let result = await connection.execute<UserAccount>(
+            `SELECT *
+             FROM ACCOUNTS
+             WHERE EMAIL = :email`,
+            {email}
+        );
+
+        let User = result.rows && result.rows[0] ? result.rows[0] : null;
+        return User;
+    }
+
+    async function getWallet(id_crt: number,connection: OracleDB.Connection){
+
+        let result = await connection.execute<Wallet>(
+            `SELECT *
+             FROM WALLETS
+             WHERE ID_CRT = :id_crt`,
+            {id_crt}
+        );
+
+        let Wallet = result.rows && result.rows[0] ? result.rows[0] : null;
+        return Wallet;
+    }
+
+    async function getEvent(idEvento:string,connection: OracleDB.Connection){
+
+        let result = await connection.execute<Events>(
+            `SELECT *
+             FROM EVENTS
+             WHERE ID_EVT = :idEvento AND STATUS = 'aprovado'`,
+            {idEvento}
+        );
+
+        let Event = result.rows && result.rows[0] ? result.rows[0] : null;
+        return Event;
+    }
+
+    function hasSufficientBalance(balance:number,valorCota:number,qtdCotas:number){
+        if(balance < (valorCota*qtdCotas)){
+            return false;
+        }
+        return true;
+    }
+
+    async function betOnEvent(email:string,idEvento:string,qtdCotas:number,escolha:string) {
+
         OracleDB.outFormat = OracleDB.OUT_FORMAT_OBJECT;
         let connection;
 
@@ -321,114 +372,50 @@ export namespace EventsManager{
                 connectString: process.env.ORACLE_CONN_STR
             });
 
-            interface idUsrResult{
-                ID_USR: number;
+            let User = await getUser(email,connection);
+            let Event = await getEvent(idEvento,connection);
+            
+            if(User?.FK_ID_CRT){
+
+                let Wallet = await getWallet(User?.FK_ID_CRT,connection);
+
+                if(Wallet?.SALDO && Event?.VALOR_COTA && hasSufficientBalance(Wallet.SALDO,Event.VALOR_COTA,qtdCotas)){
+
+                    let idUsr = User.ID_USR
+                    let idCrt = User.FK_ID_CRT;
+                    let idEvt = Event.ID_EVT;
+                    let valorCota = Event.VALOR_COTA;
+                    let balance = Wallet.SALDO;
+
+                    let valorAposta = valorCota*qtdCotas;
+                    balance -= valorAposta;
+
+                    let update = await connection.execute(
+                        `UPDATE WALLETS
+                        SET SALDO = :balance
+                        WHERE ID_CRT = :idCrt`,
+                        {balance, idCrt},
+                        {autoCommit: false}
+                    );
+    
+                    let insertion = await connection.execute(
+                        `INSERT INTO BETS
+                            (ID_APT, QTD_COTAS, FK_ID_EVT, FK_ID_USR, ESCOLHA)
+                        VALUES
+                            (SEQ_BETSPK.NEXTVAL, :qtdCotas, :idEvt, :idUsr, :escolha)`,
+                        {qtdCotas, idEvt, idUsr, escolha},
+                        {autoCommit: false}
+                    );
+
+                    await connection.commit();
+                    console.log("Resultados da inserção: ", insertion);
+                }else{
+                    throw new Error("Saldo insuficiente.");
+                }
+            }else{
+                throw new Error("Usuário não existe.");
             }
-
-            interface idCrtResult {
-                FK_ID_CRT: number;
-            }
-
-            interface balanceResult {
-                SALDO: number;
-            }
-
-            interface idEventResult {
-                ID_EVT: number;
-            }
-
-            interface valorCotasResult{
-                VALOR_COTA: number;
-            }
-
-            let resultIdUsr = await connection.execute<idUsrResult>(
-                `SELECT ID_USR
-                 FROM ACCOUNTS
-                 WHERE EMAIL = :email`,
-                {email}
-            );
-
-            let idUsr = resultIdUsr.rows?.[0]?.ID_USR;
-            if (!idUsr) {
-                throw new Error("Não existe nenhum usuário com este email.");
-            };
-
-            let resultIdCrt = await connection.execute<idCrtResult>(
-                `SELECT FK_ID_CRT
-                 FROM ACCOUNTS
-                 WHERE ID_USR = :idUsr`,
-                {idUsr}
-            );
-
-            let idCrt = resultIdCrt.rows?.[0]?.FK_ID_CRT;
-            if (!idCrt) {
-                throw new Error("Carteira do usuário não está registrada.");
-            };
-
-            let resultBalance = await connection.execute<balanceResult>(
-                `SELECT SALDO
-                 FROM WALLETS
-                 WHERE ID_CRT = :idCrt`,
-                {idCrt}
-            );
-
-            let balance = resultBalance.rows?.[0]?.SALDO;
-            if (balance === undefined || balance === null) {
-                throw new Error("Carteira do usuário não encontrada.");
-            }
-
-            let resultIdEvent = await connection.execute<idEventResult>(
-                `SELECT ID_EVT
-                 FROM EVENTS
-                 WHERE TITULO = :tituloEvento AND STATUS = 'aprovado'`,
-                {tituloEvento}
-            );
-
-            let idEvt = resultIdEvent.rows?.[0]?.ID_EVT;
-            if (!idEvt) {
-                throw new Error("Evento com este Titulo não encontrado.");
-            };
-
-            let resultValorCota = await connection.execute<valorCotasResult>(
-                `SELECT VALOR_COTA
-                 FROM EVENTS
-                 WHERE ID_EVT = :idEvt`,
-                {idEvt}
-            );
-
-            let valorCota = resultValorCota.rows?.[0]?.VALOR_COTA;
-            if (!valorCota) {
-                throw new Error("Evento com parâmetros faltantes.");
-            };
-
-            if(balance < (valorCota*qtdCotas)){
-                throw new Error("Saldo insuficiente.");
-            }
-
-            let valorAposta = valorCota*qtdCotas;
-            balance -= valorAposta;
-
-            let update = await connection.execute(
-                `UPDATE WALLETS
-                 SET SALDO = :balance
-                 WHERE ID_CRT = :idCrt`,
-                {balance, idCrt},
-                {autoCommit: false}
-            );
-
-            let insertion = await connection.execute(
-                `INSERT INTO BETS
-                    (ID_APT, QTD_COTAS, FK_ID_EVT, FK_ID_USR, ESCOLHA)
-                VALUES
-                    (SEQ_BETSPK.NEXTVAL, :qtdCotas, :idEvt, :idUsr, :escolha)`,
-                {qtdCotas, idEvt, idUsr, escolha},
-                {autoCommit: false}
-            );
-
-            await connection.commit();
-            console.log("Resultados da inserção: ", insertion);
-        
-
+            
         }catch(err){
             console.log("Erro do banco de dados: ", err);
             throw new Error("Erro ao tentar criar a aposta.");
@@ -745,14 +732,14 @@ export namespace EventsManager{
 
     export const betOnEventsHandler: RequestHandler = async (req : Request, res : Response) => {
         const pEmail = req.get('email');
-        const pTituloEvento = req.get('titulo-evento');
-        const pQtdCotas = Number(req.get('qtd-cotas'));
+        const pidEvento = req.get('id_evento');
+        const pQtdCotas = parseInt(req.get('qtd_cotas') || '0');
         const pEscolha = req.get('escolha');
 
-        if(pEmail && pTituloEvento && !isNaN(pQtdCotas) && pEscolha){
+        if(pEmail && pidEvento && !isNaN(pQtdCotas) && pEscolha){
             if(validateEmail(pEmail) && pQtdCotas > 0){
                 try{
-                    await betOnEvent(pEmail,pTituloEvento,pQtdCotas,pEscolha);
+                    await betOnEvent(pEmail,pidEvento,pQtdCotas,pEscolha);
                     res.statusCode = 200;
                     res.send('Aposta realizada com sucesso.');
                 }catch(err){

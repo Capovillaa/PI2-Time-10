@@ -2,6 +2,7 @@ import {Request, RequestHandler, Response} from "express";
 import OracleDB from "oracledb";
 import dotenv from "dotenv";
 import bcrypt from 'bcryptjs';
+
 dotenv.config();
 
 export namespace AccountsManager {
@@ -25,6 +26,11 @@ export namespace AccountsManager {
         return dateRegex.test(birthDate);
     }
 
+    async function hashPassword(password: string) :Promise<string>{
+        const hashedPassword = await bcrypt.hash(password,10);
+        return hashedPassword;
+    }
+
     async function signUp(nome:string, email:string, senha:string, dataNascimento:string) {
         OracleDB.outFormat = OracleDB.OUT_FORMAT_OBJECT;
         let connection;
@@ -45,13 +51,14 @@ export namespace AccountsManager {
                 {autoCommit: false}
             );
 
+            const hashedPassword = await hashPassword(senha);
 
             let insertion = await connection.execute(
                 `INSERT INTO ACCOUNTS
                     (ID_USR,NOME,EMAIL,SENHA,DATA_NASC,TOKEN,FK_ID_CRT)
                 VALUES
-                    (SEQ_ACCOUNTSPK.NEXTVAL,:nome,:email,:senha,TO_DATE(:dataNascimento, 'DD-MM-YYYY'),dbms_random.string('x',32),SEQ_WALLETSFK.NEXTVAL)`,
-                {nome,email,senha,dataNascimento},
+                    (SEQ_ACCOUNTSPK.NEXTVAL,:nome,:email,:hashedPassword,TO_DATE(:dataNascimento, 'DD-MM-YYYY'),dbms_random.string('x',32),SEQ_WALLETSFK.NEXTVAL)`,
+                {nome,email,hashedPassword,dataNascimento},
                 {autoCommit: false}
             );
 
@@ -159,8 +166,7 @@ export namespace AccountsManager {
         if (pEmail && pSenha && pNome && pBirthDate){
             if(validateEmail(pEmail) && validatePassword(pSenha) && validateBirthDate(pBirthDate)){
                 try {
-                    const hashedPassword = await bcrypt.hash(pSenha,10);
-                    await signUp(pNome, pEmail, hashedPassword, pBirthDate);
+                    await signUp(pNome, pEmail, pSenha, pBirthDate);
                     res.statusCode = 200;
                     res.send('Conta criada com sucesso.');
                 } catch (error) {
